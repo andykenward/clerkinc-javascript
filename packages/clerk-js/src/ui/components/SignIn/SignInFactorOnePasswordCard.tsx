@@ -10,10 +10,11 @@ import { handleError, useFormControl } from '../../utils';
 
 type SignInFactorOnePasswordProps = {
   onShowAlternativeMethodsClick: React.MouseEventHandler;
+  onFactorPrepare: () => void;
 };
 
 export const SignInFactorOnePasswordCard = (props: SignInFactorOnePasswordProps) => {
-  const { onShowAlternativeMethodsClick } = props;
+  const { onShowAlternativeMethodsClick, onFactorPrepare } = props;
   const card = useCardState();
   const { setActive } = useCoreClerk();
   const signIn = useCoreSignIn();
@@ -79,7 +80,7 @@ export const SignInFactorOnePasswordCard = (props: SignInFactorOnePasswordProps)
                 {...passwordControl.props}
                 autoFocus
                 actionLabel={localizationKeys('formFieldAction__forgotPassword')}
-                onActionClicked={onShowAlternativeMethodsClick}
+                onActionClicked={onFactorPrepare}
               />
             </Form.ControlRow>
             <Form.SubmitButton />
