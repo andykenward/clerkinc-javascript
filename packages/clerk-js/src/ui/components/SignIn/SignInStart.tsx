@@ -3,9 +3,10 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import { ERROR_CODES } from '../../../core/constants';
 import { clerkInvalidFAPIResponse } from '../../../core/errors';
-import { getClerkQueryParam } from '../../../utils';
+import { getClerkQueryParam, windowNavigate } from '../../../utils';
 import type { SignInStartIdentifier } from '../../common';
 import {
+  buildSSOCallbackURL,
   getIdentifierControlDisplayValues,
   groupIdentifiers,
   withRedirectToHomeSingleSessionGuard,
@@ -67,8 +68,10 @@ export function _SignInStart(): JSX.Element {
     isRequired: true,
   });
 
+  const samlConnections = userSettings.saml;
+
   // TODO replace with check in first factors?
-  const showSaml = userSettings.saml.length > 0;
+  const showSaml = samlConnections.length > 0;
 
   const switchToNextIdentifier = () => {
     setIdentifierAttribute(
@@ -162,6 +165,24 @@ export function _SignInStart(): JSX.Element {
   }, []);
 
   const buildSignInParams = (fields: Array<FormControlState<string>>): SignInCreateParams => {
+    // If email domain matches a saml connection domain, convert to saml strategy
+    const emailAddress = fields.find(f => f.name === 'email_address');
+    const emailDomain = emailAddress?.value.split('@')[1];
+
+    if (emailDomain && samlConnections.some(sc => sc.domain === emailDomain)) {
+      const { displayConfig } = useEnvironment();
+      const ctx = useSignInContext();
+      const redirectUrl = buildSSOCallbackURL(ctx, displayConfig.signInUrl);
+      const actionCompleteRedirectUrl = ctx.afterSignInUrl || displayConfig.afterSignInUrl;
+
+      return {
+        strategy: 'saml',
+        samlIdentifier: emailAddress.value,
+        redirectUrl,
+        actionCompleteRedirectUrl,
+      } as SignInCreateParams;
+    }
+
     const hasPassword = fields.some(f => f.name === 'password' && !!f.value);
     if (!hasPassword) {
       fields = fields.filter(f => f.name !== 'password');
@@ -175,8 +196,16 @@ export function _SignInStart(): JSX.Element {
   const signInWithFields = async (...fields: Array<FormControlState<string>>) => {
     try {
       const res = await signIn.create(buildSignInParams(fields));
+      const { status: verificationStatus, externalVerificationRedirectURL } = res.firstFactorVerification;
+
       switch (res.status) {
         case 'needs_first_factor':
+          // TODO new status to determine if redirection needed?
+
+          if (verificationStatus === 'unverified' && externalVerificationRedirectURL) {
+            return windowNavigate(externalVerificationRedirectURL);
+          }
+
           return navigate('factor-one');
         case 'needs_second_factor':
           return navigate('factor-two');
