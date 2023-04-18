@@ -1,10 +1,11 @@
 import React from 'react';
 
 import { clerkInvalidFAPIResponse } from '../../../core/errors';
-import { useCoreClerk, useCoreSignIn, useEnvironment, useSignInContext } from '../../contexts';
+import { useCoreSignIn, useEnvironment } from '../../contexts';
 import { Col, descriptors, localizationKeys } from '../../customizables';
 import { Card, CardAlert, Footer, Form, Header, useCardState } from '../../elements';
 import { useSupportEmail } from '../../hooks/useSupportEmail';
+import { useRouter } from '../../router';
 import { handleError, useFormControl } from '../../utils';
 
 type SignInFactorTwoBackupCodeCardProps = {
@@ -15,8 +16,7 @@ export const SignInFactorTwoBackupCodeCard = (props: SignInFactorTwoBackupCodeCa
   const { onShowAlternativeMethodsClicked } = props;
   const signIn = useCoreSignIn();
   const { displayConfig } = useEnvironment();
-  const { navigateAfterSignIn } = useSignInContext();
-  const { setActive } = useCoreClerk();
+  const { navigate } = useRouter();
   const supportEmail = useSupportEmail();
   const card = useCardState();
   const codeControl = useFormControl('code', '', {
@@ -25,14 +25,14 @@ export const SignInFactorTwoBackupCodeCard = (props: SignInFactorTwoBackupCodeCa
     isRequired: true,
   });
 
-  const handleBackupCodeSubmit: React.FormEventHandler = async e => {
+  const handleBackupCodeSubmit: React.FormEventHandler = e => {
     e.preventDefault();
     return signIn
       .attemptSecondFactor({ strategy: 'backup_code', code: codeControl.value })
       .then(res => {
         switch (res.status) {
           case 'complete':
-            return setActive({ session: res.createdSessionId, beforeEmit: navigateAfterSignIn });
+            return navigate(`../reset-password-success?createdSessionId=${res.createdSessionId}`);
           default:
             return console.error(clerkInvalidFAPIResponse(res.status, supportEmail));
         }
