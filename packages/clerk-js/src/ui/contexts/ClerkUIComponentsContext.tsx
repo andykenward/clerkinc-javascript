@@ -1,3 +1,4 @@
+import type { AuthTokenOptions } from '@clerk/types';
 import React from 'react';
 
 import { buildURL } from '../../utils/url';
@@ -16,6 +17,7 @@ import type {
   UserButtonCtx,
   UserProfileCtx,
 } from '../types';
+import { isRedirectForSSOFlow } from './utils';
 
 export const ComponentContext = React.createContext<AvailableComponentCtx | null>(null);
 
@@ -95,6 +97,7 @@ export type SignInContextType = SignInCtx & {
 };
 
 export const useSignInContext = (): SignInContextType => {
+  console.log('BEGINNING OF SIGNINCONTEXT');
   const { componentName, ...ctx } = (React.useContext(ComponentContext) || {}) as SignInCtx;
   const { navigate } = useNavigate();
   const { displayConfig } = useEnvironment();
@@ -113,13 +116,22 @@ export const useSignInContext = (): SignInContextType => {
     }),
   );
 
-  const afterSignInUrl = clerk.buildUrlWithAuth(
-    extractAuthProp('afterSignInUrl', {
-      ctx,
-      queryParams,
-      displayConfig,
-    }),
-  );
+  const extractedAfterSignInUrl = extractAuthProp('afterSignInUrl', {
+    ctx,
+    queryParams,
+    displayConfig,
+  });
+
+  const authTokenOpts: AuthTokenOptions = {};
+  if (clerk.instanceType !== 'production' && isRedirectForSSOFlow(clerk, extractedAfterSignInUrl)) {
+    authTokenOpts.queryParam = true;
+
+    if (clerk.session) {
+      navigate(clerk.buildUrlWithAuth(extractedAfterSignInUrl, authTokenOpts));
+    }
+  }
+
+  const afterSignInUrl = clerk.buildUrlWithAuth(extractedAfterSignInUrl, authTokenOpts);
 
   const navigateAfterSignIn = () => navigate(afterSignInUrl);
 

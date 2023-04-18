@@ -1,9 +1,14 @@
 const DEV_BROWSER_JWT_MARKER = '__clerk_db_jwt';
 const DEV_BROWSER_JWT_MARKER_REGEXP = /__clerk_db_jwt\[(.*)\]/;
 
-export function setDevBrowserJWTInURL(url: string, jwt: string): string {
-  const hasHash = (url || '').includes('#');
-  return `${url}${hasHash ? '' : '#'}${DEV_BROWSER_JWT_MARKER}[${(jwt || '').trim()}]`;
+export function setDevBrowserJWTInURL(url: string, jwt: string, asQueryParam: boolean): string {
+  if (asQueryParam) {
+    const hasQueryParam = (url || '').includes('?');
+    return `${url}${hasQueryParam ? '&' : '?'}${'__dev_session'}=${(jwt || '').trim()}`;
+  } else {
+    const hasHash = (url || '').includes('#');
+    return `${url}${hasHash ? '' : '#'}${DEV_BROWSER_JWT_MARKER}[${(jwt || '').trim()}]`;
+  }
 }
 
 export function getDevBrowserJWTFromURL(url: string): string {

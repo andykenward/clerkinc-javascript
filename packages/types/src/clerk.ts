@@ -293,8 +293,9 @@ export interface Clerk {
    * Decorates the provided url with the auth token for development instances.
    *
    * @param {string} to
+   * @param opts A {@link AuthTokenOptions} object
    */
-  buildUrlWithAuth(to: string): string;
+  buildUrlWithAuth(to: string, opts?: AuthTokenOptions): string;
 
   /**
    * Returns the configured url where <SignIn/> is mounted or a custom sign-in page is rendered.
@@ -474,6 +475,13 @@ export interface ClerkOptions {
   isSatellite?: boolean | ((url: URL) => boolean);
   signInUrl?: string;
 }
+
+export type AuthTokenOptions = {
+  /**
+   * Controls if dev browser JWT is added as a query param
+   */
+  queryParam?: boolean | null;
+};
 
 export interface Resources {
   client: ClientResource;

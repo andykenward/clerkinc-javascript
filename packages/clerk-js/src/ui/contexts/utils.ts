@@ -13,3 +13,20 @@ export function assertContextExists(contextVal: unknown, providerName: string): 
     clerkCoreErrorContextProviderNotFound(providerName);
   }
 }
+
+export function isRedirectForSSOFlow(clerk: Clerk, redirectUrl: string): boolean {
+  const fapiUrl = clerk.publishableKey || clerk.frontendApi;
+
+  const url = new URL(redirectUrl);
+  const path = url.pathname;
+
+  if (url.host === fapiUrl && ssoRedirectPaths.includes(path)) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+const ssoRedirectPaths: string[] = [
+  '/oauth/authorize', // OAuth2 identify provider flow
+];

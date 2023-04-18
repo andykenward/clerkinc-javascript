@@ -15,6 +15,7 @@ import {
 import type {
   ActiveSessionResource,
   AuthenticateWithMetamaskParams,
+  AuthTokenOptions,
   BeforeEmitCallback,
   Clerk as ClerkInterface,
   ClerkOptions,
@@ -604,7 +605,7 @@ export default class Clerk implements ClerkInterface {
     return await customNavigate(stripOrigin(toURL));
   };
 
-  public buildUrlWithAuth(to: string): string {
+  public buildUrlWithAuth(to: string, options?: AuthTokenOptions): string {
     if (this.#instanceType === 'production' || !this.#devBrowserHandler?.usesUrlBasedSessionSync()) {
       return to;
     }
@@ -620,7 +621,12 @@ export default class Clerk implements ClerkInterface {
       return clerkMissingDevBrowserJwt();
     }
 
-    return setDevBrowserJWTInURL(toURL.href, devBrowserJwt);
+    let asQueryParam = false;
+    if (options && options.queryParam) {
+      asQueryParam = options.queryParam;
+    }
+
+    return setDevBrowserJWTInURL(toURL.href, devBrowserJwt, asQueryParam);
   }
 
   public buildSignInUrl(options?: RedirectOptions): string {
